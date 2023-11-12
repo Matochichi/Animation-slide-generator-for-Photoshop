@@ -1,22 +1,42 @@
-var gUIWindow = new Window('dialog','テストウィンドウ'); 
+var dlg = new Window('dialog', 'PAN generator', undefined, { closeButton: false });
 
-gUIWindow.bounds = [200,100,580,280]; 
+dlg.add('statictext', undefined, 'mm per k:');
+var mmPerKField = dlg.add('edittext', undefined, ''); // mm per k の初期値を設定
 
-gUIWindow.activeDocPnl = gUIWindow.add("panel",[10,5,370,90],"アクティブドキュメント"); 
-gUIWindow.activeDocPnl .editText = gUIWindow.activeDocPnl .add("edittext",[10,15,345,33], ""); 
+var timeFramesPanel = dlg.add('group');
+var secondsField = timeFramesPanel.add('edittext', undefined, ''); 
+timeFramesPanel.add('statictext', undefined, '秒');
+var framesField = timeFramesPanel.add('edittext', undefined, ''); 
+timeFramesPanel.add('statictext', undefined, 'コマ');
 
-gUIWindow.activeDocPnl .editText.enabled = false ;
+var buttonsPanel = dlg.add('group');
+var okButton = buttonsPanel.add('button', undefined, '実行');
+var closeButton = buttonsPanel.add('button', undefined, 'キャンセル');
 
-gUIWindow.activeDocPnl .radiorBtn1 = gUIWindow.activeDocPnl .add("radiobutton",[10,40,200,58], "オリジナル"); 
-gUIWindow.activeDocPnl .radiorBtn2 = gUIWindow.activeDocPnl .add("radiobutton",[10,55,200,75], "複製"); 
+okButton.onClick = function() {
+  var mmPerK = parseFloat(mmPerKField.text); 
+  var seconds = parseFloat(secondsField.text); 
+  var frames = parseFloat(framesField.text); 
+  var totalFrames = seconds * 24;
+  var extraFrames = frames;
+  var doc = app.activeDocument;
+  var cmPerK = mmPerK / 10;
+  var extensionWidth = cmPerK * extraFrames;
 
-gUIWindow.activeDocPnl .radiorBtn1.value = true; 
+  // キャンバスが小さい方の辺よりも小さい場合、警告を表示して処理を中止
+  if (extensionWidth < 0) {
+    alert('警告: 算出されたスライド長がキャンバスのサイズよりも小さいため処理を中止します。');
+    return;
+  }
 
-gUIWindow.dList = gUIWindow.add("dropdownlist",[15,110,365,130],["ぼかし（ガウス）20","ダスト＆スクラッチ20,10"]); 
-gUIWindow.dList.selection = 0; 
+  // 右側に拡張するために切り抜き
+  doc.crop([0, 0, doc.width + extensionWidth, doc.height]);
 
-gUIWindow.filterPnl = gUIWindow.add("panel",[10,90,370,140],"フィルターの処理"); 
-gUIWindow.okBtn = gUIWindow.add("button",[80,145,175,170], "実行"); 
-gUIWindow.cancelBtn = gUIWindow.add("button",[190,145,285,170], "キャンセル"); 
+  dlg.close();
+};
 
-gUIWindow.show();
+closeButton.onClick = function() {
+  dlg.close();
+};
+
+dlg.show();
