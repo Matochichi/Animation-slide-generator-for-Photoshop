@@ -27,8 +27,13 @@ okButton.onClick = function() {
   var extensionX = 0;
   var extensionY = 0;
 
+  // 角度を0~180度に正規化する
+  if (angle >= 180) {
+    replaceAngle -= 180;
+  }
+
   // 角度に基づいて上下左右に伸ばす
-  if ((angle >= 0 && angle < 90) || (angle >= 270 && angle < 360)) {
+  if ((angle >= 0 && angle < 90)) {
     // 右向き
     extensionX = Math.abs(totallength * Math.cos(radians));
   } else if (angle >= 90 && angle < 180) {
@@ -36,16 +41,13 @@ okButton.onClick = function() {
     extensionY = Math.abs(totallength * Math.sin(radians));
   } else if (angle >= 180 && angle < 270) {
     // 左向き
-    extensionX = -Math.abs(totallength * Math.cos(radians));
+    doc.rotateCanvas(180); // キャンバスを180度回転
+    extensionX = Math.abs(totallength * Math.cos(radians));
   } else if (angle >= 270 && angle < 360) {
     // 上向き
-    extensionY = -Math.abs(totallength * Math.sin(radians));
+    doc.rotateCanvas(180); // キャンバスを180度回転
+    extensionY = Math.abs(totallength * Math.sin(radians));
   }
-
-  // キャンバスが左向き　上向きの場合は、角度処理を行う前にキャンバス自体を180度回転させてから処理を行う
-  // 処理を行う際には、180度回転させたあとは、該当の場合にのみ（左向き　上向きの場合）再度180度回転させる処理を組み込む。
-  
-  // 注意：キャンバスを回転処理する前に、定規かなんかのツールを使ってキャンバスの傾きを直してから上記の処理を行う。 
 
   var canvasWidth = doc.width + Math.abs(extensionX);
   var canvasHeight = doc.height + Math.abs(extensionY);
@@ -59,12 +61,17 @@ okButton.onClick = function() {
   // キャンバスを拡張
   doc.resizeCanvas(canvasWidth, canvasHeight, AnchorPosition.TOPLEFT);
 
+  // 左側または上側に拡張された場合、180度回転させる
+  if ((angle >= 180 && angle < 360)) {
+    doc.rotateCanvas(180); // 左向きの場合、180度回転
+  }
+
   dlg.close();
 };
-
 
 closeButton.onClick = function() {
   dlg.close();
 };
 
 dlg.show();
+
