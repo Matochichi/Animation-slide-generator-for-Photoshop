@@ -1,77 +1,155 @@
-var dlg = new Window('dialog', 'PAN generator', undefined, { closeButton: false });
+var dlg = new Window('dialog', '🍞PAN工場🍞', undefined, { closeButton: false });
 
-dlg.add('statictext', undefined, 'mm per k:');
-var mmPerKField = dlg.add('edittext', undefined, ''); // mm per k の初期値を設定
+// 速度
+var speedPanel = dlg.add('panel');
+speedPanel.text = '速度（mm/コマ）';
+speedPanel.orientation = 'row';
 
-var anglePanel = dlg.add('group');
-var angleField = anglePanel.add('edittext', undefined, '');
-anglePanel.add('statictext', undefined, '角度（度）');
+//スライダーの長さの最大値はここで調整
+var speedSlider = speedPanel.add('slider', undefined, 0, 0, 200);
+var speedField = speedPanel.add('edittext', undefined, '0 mm');
+speedField.characters = 8;
 
-var lengthPanel = dlg.add('group');
-var lengthField = lengthPanel.add('edittext', undefined, '');
-lengthPanel.add('statictext', undefined, '長さ');
+speedSlider.onChanging = function() {
+    speedField.text = speedSlider.value.toFixed(0)+' mm'; 
+};
+
+
+speedSlider.onChange = function() {
+    speedField.text = speedSlider.value.toFixed(0)+' mm'; 
+};
+
+// 表示時間
+var lengthPanel = dlg.add('panel');
+lengthPanel.text = '表示時間（秒＋フレーム）';
+lengthPanel.orientation = 'row';
+
+//スライダーの長さの最大値はここで調整
+var lengthSlider = lengthPanel.add('slider', undefined, 0, 0, 480);
+var lengthField = lengthPanel.add('edittext', undefined, '0 sec');
+lengthField.characters = 8;
+
+lengthSlider.onChanging = function() {
+    var value = lengthSlider.value.toFixed(0);
+    var seconds = Math.floor(value / 24);
+    var frames = value % 24;
+    lengthField.text = seconds + ' sec ' + frames + ' fr';
+};
+
+lengthSlider.onChange = function() {
+    var value = lengthSlider.value.toFixed(0);
+    var seconds = Math.floor(value / 24);
+    var frames = value % 24;
+    lengthField.text = seconds + ' sec ' + frames + ' fr';
+};
+
+// 延長する方向（角度）
+var anglePanel = dlg.add('panel');
+anglePanel.text = '延長する方向';
+anglePanel.orientation = 'row';
+
+var angleSlider = anglePanel.add('slider', undefined, 0, -180, 180);
+
+var scriptFilePath = new File($.fileName);
+
+var scriptDirectory = scriptFilePath.parent;
+
+var img = anglePanel.add('image', [0, 0, 30, 30]);
+
+updateImage(0);
+
+var angleField = anglePanel.add('edittext', undefined, ' 0'+' °');
+angleField.characters = 4;
+
+function updateImage(angleValue) {
+    var imageName = "/resource/deg/" + angleValue + ".png"; 
+    var newImagePath = new File(scriptDirectory + imageName); 
+
+    if (newImagePath.exists) {
+        img.image = newImagePath; 
+    } else {
+        alert("画像が見つかりません: " + imageName); 
+    }
+}
+
+angleSlider.onChanging = function() {
+    var angleValue = angleSlider.value.toFixed(0); 
+    angleField.text = angleValue + ' °';
+    updateImage(angleValue); 
+};
+
+angleSlider.onChange = function() {
+    var angleValue = angleSlider.value.toFixed(0); 
+    angleField.text = angleValue + ' °';
+    updateImage(angleValue); 
+};
+
 
 var buttonsPanel = dlg.add('group');
 var okButton = buttonsPanel.add('button', undefined, '実行');
 var closeButton = buttonsPanel.add('button', undefined, 'キャンセル');
 
-okButton.onClick = function() {
-  var mmPerK = parseFloat(mmPerKField.text); 
+okButton.onClick = function () {
+  var mmPerK = parseFloat(speedField.text);
   var angle = parseFloat(angleField.text);
   var length = parseFloat(lengthField.text);
-  var totallength = (mmPerK * length);
+  var totallength = mmPerK * length;
 
-  var doc = app.activeDocument;
-  var radians = angle * (Math.PI / 180); // 角度をラジアンに変換
-
-  var extensionX = 0;
-  var extensionY = 0;
-
-  // 角度を0~180度に正規化する
-  if (angle >= 180) {
-    replaceAngle -= 180;
+  if (-45 <= angle && angle <= 45) {
+    // 0度に傾きを修正
+    app.activeDocument.rotateCanvas(-angle);
+  } else if (45 < angle && angle < 135) {
+    // 90度に傾きを修正
+    app.activeDocument.rotateCanvas(-angle + 90);
+  } else if (-135 <= angle && angle <= -45) {
+    // -90度に傾きを修正
+    app.activeDocument.rotateCanvas(-angle - 90);
+  } else {
+    // 180度に傾きを修正
+    app.activeDocument.rotateCanvas(-angle + 180);
   }
 
-  // 角度に基づいて上下左右に伸ばす
-  if ((angle >= 0 && angle < 90)) {
-    // 右向き
-    extensionX = Math.abs(totallength * Math.cos(radians));
-  } else if (angle >= 90 && angle < 180) {
-    // 下向き
-    extensionY = Math.abs(totallength * Math.sin(radians));
-  } else if (angle >= 180 && angle < 270) {
-    // 左向き
-    doc.rotateCanvas(180); // キャンバスを180度回転
-    extensionX = Math.abs(totallength * Math.cos(radians));
-  } else if (angle >= 270 && angle < 360) {
-    // 上向き
-    doc.rotateCanvas(180); // キャンバスを180度回転
-    extensionY = Math.abs(totallength * Math.sin(radians));
+  var canvasWidth = app.activeDocument.width.value;
+  var canvasHeight = app.activeDocument.height.value;
+
+  var newWidth = canvasWidth;
+  var newHeight = canvasHeight;
+
+  var x;
+  var y;
+  if (-45 <= angle && angle <= 45) {
+    x = newWidth += totallength;
+    y = newHeight;
+  } else if (45 < angle && angle < 135) {
+    x = newWidth;
+    y = newHeight += totallength;
+  } else if (-135 <= angle && angle <= -45) {
+    y = newHeight += totallength;
+    x = newWidth;
+  } else {
+    x = newWidth += totallength;
+    y = newHeight;
   }
 
-  var canvasWidth = doc.width + Math.abs(extensionX);
-  var canvasHeight = doc.height + Math.abs(extensionY);
-
-  // キャンバスが小さい方の辺よりも小さい場合、警告を表示して処理を中止
-  if (canvasWidth < 0 || canvasHeight < 0) {
-    alert('警告: 算出されたスライド長がキャンバスのサイズよりも小さいため処理を中止します。');
-    return;
+  var direction;
+  if (-45 <= angle && angle <= 45) {
+    direction = AnchorPosition.TOPLEFT;
+  } else if (45 < angle && angle < 135) {
+    direction = AnchorPosition.BOTTOMCENTER;
+  } else if (-135 <= angle && angle <= -45) {
+    direction = AnchorPosition.TOPCENTER;
+  } else {
+    direction = AnchorPosition.BOTTOMRIGHT;
   }
 
-  // キャンバスを拡張
-  doc.resizeCanvas(canvasWidth, canvasHeight, AnchorPosition.TOPLEFT);
-
-  // 左側または上側に拡張された場合、180度回転させる
-  if ((angle >= 180 && angle < 360)) {
-    doc.rotateCanvas(180); // 左向きの場合、180度回転
-  }
+  app.activeDocument.resizeCanvas(x, y, direction);
 
   dlg.close();
 };
 
-closeButton.onClick = function() {
+
+closeButton.onClick = function () {
   dlg.close();
 };
 
 dlg.show();
-
