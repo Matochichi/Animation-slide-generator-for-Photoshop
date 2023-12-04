@@ -1,4 +1,4 @@
-var dlg = new Window('dialog', '🍞PAN工場🍞', undefined, { closeButton: false });
+var dlg = new Window('dialog', '🍞PAN工場🍞', undefined, { closeButton: true });
 
 // 速度
 var speedPanel = dlg.add('panel');
@@ -25,7 +25,7 @@ lengthPanel.text = '表示時間（秒＋フレーム）';
 lengthPanel.orientation = 'row';
 
 //スライダーの長さの最大値はここで調整
-var lengthSlider = lengthPanel.add('slider', undefined, 0, 0, 480);
+var lengthSlider = lengthPanel.add('slider', undefined, 0, 0, 240);
 var lengthField = lengthPanel.add('edittext', undefined, '0 sec');
 lengthField.characters = 8;
 
@@ -84,7 +84,6 @@ angleSlider.onChange = function() {
     updateImage(angleValue); 
 };
 
-
 var buttonsPanel = dlg.add('group');
 var okButton = buttonsPanel.add('button', undefined, '実行');
 var closeButton = buttonsPanel.add('button', undefined, 'キャンセル');
@@ -95,19 +94,17 @@ okButton.onClick = function () {
   var length = parseFloat(lengthField.text);
   var totallength = mmPerK * length;
 
-  if (-45 <= angle && angle <= 45) {
-    // 0度に傾きを修正
-    app.activeDocument.rotateCanvas(-angle);
-  } else if (45 < angle && angle < 135) {
-    // 90度に傾きを修正
-    app.activeDocument.rotateCanvas(-angle + 90);
-  } else if (-135 <= angle && angle <= -45) {
-    // -90度に傾きを修正
-    app.activeDocument.rotateCanvas(-angle - 90);
-  } else {
-    // 180度に傾きを修正
-    app.activeDocument.rotateCanvas(-angle + 180);
-  }
+  if (angle >= -45 && angle <= 45) {
+    app.activeDocument.rotateCanvas(-(-angle));
+} else if (angle > 45 && angle <= 135) {
+    app.activeDocument.rotateCanvas(-(90 - angle));
+} else if (angle > 135 || angle <= -135) {
+    app.activeDocument.rotateCanvas(-(-angle + (angle > 0 ? 180 : -180)));
+} else if (angle > -135 && angle <= -45) {
+    app.activeDocument.rotateCanvas(-(-angle - 90));
+} else {
+  //何しようか思いつかなかった
+}
 
   var canvasWidth = app.activeDocument.width.value;
   var canvasHeight = app.activeDocument.height.value;
